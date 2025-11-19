@@ -1,0 +1,39 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-914e26a000b3d82ab02eff4fde84f9dc5e34bdd9",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "userSourceNameMap": {
+    "contracts/bet.sol": "project/contracts/bet.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/bet.sol": {
+        "content": "// SPDX-License-Identifier: UNLICENSED\npragma solidity ^0.8.28;\n\ncontract bet {\n    enum BetStatus { PENDING, ACTIVE, RESOLVED, CANCELLED }\n    \n    struct Bet {\n        address maker;\n        address taker;\n        address judge;\n        uint256 amount;\n        string description;\n        uint256 deadline;\n        BetStatus status;\n        address winner;\n    }\n    \n    Bet public bet;\n    mapping(address => uint256) public stakes;\n    \n    event BetCreated(address indexed maker, address indexed taker, address indexed judge, uint256 amount, string description);\n    event BetAccepted(address indexed taker);\n    event BetResolved(address indexed winner, uint256 totalAmount);\n    event BetCancelled();\n    \n    modifier onlyParticipants() {\n        require(msg.sender == bet.maker || msg.sender == bet.taker, \"Not a participant\");\n        _;\n    }\n    \n    modifier onlyJudge() {\n        require(msg.sender == bet.judge, \"Only judge can resolve\");\n        _;\n    }\n    \n    constructor(Bet memory _bet) payable {\n        _bet.maker = msg.sender;\n        _bet.amount = msg.value;\n        _bet.status = BetStatus.PENDING;\n        _bet.winner = address(0);\n        bet = _bet;\n        stakes[msg.sender] = msg.value;\n    }\n    \n    function acceptBet() external payable {\n        require(msg.sender == bet.taker, \"Only designated taker can accept\");\n        require(bet.status == BetStatus.PENDING, \"Bet is not pending\");\n        require(block.timestamp < bet.deadline, \"Bet has expired\");\n        require(msg.value == bet.amount, \"Must stake the same amount\");\n        \n        stakes[msg.sender] = msg.value;\n        bet.status = BetStatus.ACTIVE;\n        \n        emit BetAccepted(msg.sender);\n    }\n    \n    function resolveBet(address _winner) external onlyJudge {\n        require(bet.status == BetStatus.ACTIVE, \"Bet is not active\");\n        require(_winner == bet.maker || _winner == bet.taker, \"Winner must be a participant\");\n        \n        bet.winner = _winner;\n        bet.status = BetStatus.RESOLVED;\n        \n        uint256 totalAmount = address(this).balance;\n        payable(_winner).transfer(totalAmount);\n        \n        emit BetResolved(_winner, totalAmount);\n    }\n    \n    function cancelBet() external {\n        require(bet.status == BetStatus.PENDING || bet.status == BetStatus.ACTIVE, \"Cannot cancel resolved bet\");\n        \n        // Maker can cancel pending bet, anyone can cancel expired bet\n        if (bet.status == BetStatus.PENDING) {\n            require(msg.sender == bet.maker, \"Only maker can cancel pending bet\");\n        } else {\n            require(block.timestamp >= bet.deadline, \"Can only cancel expired active bet\");\n        }\n        \n        bet.status = BetStatus.CANCELLED;\n        \n        // Refund stakes\n        if (stakes[bet.maker] > 0) {\n            uint256 makerStake = stakes[bet.maker];\n            stakes[bet.maker] = 0;\n            payable(bet.maker).transfer(makerStake);\n        }\n        \n        if (stakes[bet.taker] > 0) {\n            uint256 takerStake = stakes[bet.taker];\n            stakes[bet.taker] = 0;\n            payable(bet.taker).transfer(takerStake);\n        }\n        \n        emit BetCancelled();\n    }\n    \n    function getBetDetails() external view returns (\n        address maker,\n        address taker,\n        address judge,\n        uint256 amount,\n        string memory description,\n        uint256 deadline,\n        BetStatus status,\n        address winner\n    ) {\n        return (\n            bet.maker,\n            bet.taker,\n            bet.judge,\n            bet.amount,\n            bet.description,\n            bet.deadline,\n            bet.status,\n            bet.winner\n        );\n    }\n    \n    function getContractBalance() external view returns (uint256) {\n        return address(this).balance;\n    }\n}"
+      }
+    }
+  }
+}
