@@ -22,12 +22,12 @@ const clientId = process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID || "YOUR_WEB3AUTH_CL
 
 const chainConfig = {
   chainNamespace: CHAIN_NAMESPACES.EIP155,
-  chainId: "0x1", // Ethereum Mainnet
-  rpcTarget: "https://rpc.ankr.com/eth",
-  displayName: "Ethereum Mainnet",
-  blockExplorerUrl: "https://etherscan.io",
-  ticker: "ETH",
-  tickerName: "Ethereum",
+  chainId: "0xaa36a7", // Sepolia Testnet
+  rpcTarget: "https://rpc.sepolia.org",
+  displayName: "Sepolia Testnet",
+  blockExplorerUrl: "https://sepolia.etherscan.io",
+  ticker: "SepoliaETH",
+  tickerName: "Sepolia Ethereum",
   logo: "https://cryptologos.cc/logos/ethereum-eth-logo.png",
 }
 

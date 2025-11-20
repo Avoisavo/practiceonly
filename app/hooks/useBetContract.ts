@@ -41,6 +41,23 @@ export function useBetContract() {
     return result
   }
 
+  // Check network
+  const checkNetwork = async () => {
+    if (!provider) return false
+    
+    try {
+      const chainId = await provider.request({
+        method: 'eth_chainId'
+      })
+      console.log('Current chain ID:', chainId)
+      console.log('Expected: 0xaa36a7 (Sepolia)')
+      return chainId === '0xaa36a7'
+    } catch (err) {
+      console.error('Error checking network:', err)
+      return false
+    }
+  }
+
   // Get bet details from contract
   const fetchBetDetails = async () => {
     if (!provider) return
@@ -49,6 +66,12 @@ export function useBetContract() {
     setError(null)
 
     try {
+      // Check if we're on the right network
+      const isCorrectNetwork = await checkNetwork()
+      if (!isCorrectNetwork) {
+        setError('Please switch to Sepolia Testnet in your wallet')
+        return
+      }
       const result = await provider.request({
         method: 'eth_call',
         params: [
@@ -105,7 +128,18 @@ export function useBetContract() {
         winner
       })
     } catch (err) {
-      setError(`Failed to fetch bet details: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      console.error('Detailed error fetching bet details:', err)
+      console.error('Contract address:', contractAddress)
+      console.error('Provider:', provider)
+      
+      let errorMessage = 'Unknown error'
+      if (err instanceof Error) {
+        errorMessage = err.message
+      } else if (typeof err === 'object' && err !== null) {
+        errorMessage = JSON.stringify(err)
+      }
+      
+      setError(`Failed to fetch bet details: ${errorMessage}`)
       console.error('Error fetching bet details:', err)
     } finally {
       setIsLoading(false)

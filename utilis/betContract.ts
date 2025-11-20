@@ -209,7 +209,7 @@ export const betABI = [
     "stateMutability": "view",
     "type": "function"
   }
-] as const
+]
 
 export enum BetStatus {
   PENDING = 0,
